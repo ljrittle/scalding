@@ -176,6 +176,7 @@ if (!CONFIG["jar"])
   SHORT_SCALA_VERSION = SCALA_VERSION.start_with?("2.10") ?  "2.10" : SCALA_VERSION
   CONFIG["jar"] = repo_root + "/scalding-core/target/scala-#{SHORT_SCALA_VERSION}/scalding-core-assembly-#{SCALDING_VERSION}.jar"
   CONFIG["json-jar"] = repo_root + "/scalding-json/target/scala-#{SHORT_SCALA_VERSION}/scalding-json-assembly-#{SCALDING_VERSION}.jar"
+  CONFIG["avro-jar"] = repo_root + "/scalding-avro/target/scala-#{SHORT_SCALA_VERSION}/scalding-avro-assembly-#{SCALDING_VERSION}.jar"
 end
 
 #Check that we can find the jar:
@@ -418,8 +419,7 @@ end
 def build_job_jar
   $stderr.puts("compiling " + JOBFILE)
   FileUtils.mkdir_p(BUILDDIR)
-  classpath = (convert_dependencies_to_jars +
-               ([LIBCP, JARPATH, CONFIG["json-jar"], CLASSPATH].select { |s| s != "" })).join(":")
+  classpath = (([LIBCP, JARPATH, CONFIG["json-jar"], CONFIG["avro-jar"], CLASSPATH].select { |s| s != "" }) + convert_dependencies_to_jars).join(":")
   puts("#{file_type}c -classpath #{classpath} -d #{BUILDDIR} #{JOBFILE}")
   unless system("#{COMPILE_CMD} -classpath #{classpath} -d #{BUILDDIR} #{JOBFILE}")
     puts "[SUGGESTION]: Try scald.rb --clean, you may have corrupt jars lying around"
@@ -460,7 +460,7 @@ if is_file?
 end
 
 def local_cmd(mode)
-  classpath = (convert_dependencies_to_jars + [JARPATH, CONFIG["json-jar"]]).join(":") + (is_file? ? ":#{JOBJARPATH}" : "") +
+  classpath = ([JARPATH, CONFIG["json-jar"], CONFIG["avro-jar"]] + convert_dependencies_to_jars).join(":") + (is_file? ? ":#{JOBJARPATH}" : "") +
                 ":" + CLASSPATH
   "java -Xmx#{LOCALMEM} -cp #{classpath} com.twitter.scalding.Tool #{JOB} #{mode} " + JOB_ARGS
 end
