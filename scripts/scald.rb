@@ -90,6 +90,11 @@ OPTS_PARSER = Trollop::Parser.new do
   opt :jar, "Specify the jar file", :type => String
   opt :host, "Specify the hadoop host where the job runs", :type => String
   opt :reducers, "Specify the number of reducers", :type => :int
+  opt :avro, "Add scalding-avro to classpath"
+  opt :commons, "Add scalding-commons to classpath"
+  opt :jdbc, "Add scalding-jdbc to classpath"
+  opt :json, "Add scalding-json to classpath"
+  opt :parquet, "Add scalding-parquet to classpath"
 
   stop_on_unknown #Stop parsing for options parameters once we reach the job file.
 end
@@ -175,13 +180,38 @@ if (!CONFIG["jar"])
   #what jar has all the dependencies for this job
   SHORT_SCALA_VERSION = SCALA_VERSION.start_with?("2.10") ?  "2.10" : SCALA_VERSION
   CONFIG["jar"] = repo_root + "/scalding-core/target/scala-#{SHORT_SCALA_VERSION}/scalding-core-assembly-#{SCALDING_VERSION}.jar"
-  CONFIG["json-jar"] = repo_root + "/scalding-json/target/scala-#{SHORT_SCALA_VERSION}/scalding-json-assembly-#{SCALDING_VERSION}.jar"
-  CONFIG["avro-jar"] = repo_root + "/scalding-avro/target/scala-#{SHORT_SCALA_VERSION}/scalding-avro-assembly-#{SCALDING_VERSION}.jar"
 end
 
 #Check that we can find the jar:
 if (!File.exist?(CONFIG["jar"]))
   puts("#{CONFIG["jar"]} is missing, you probably need to run sbt assembly")
+  exit(1)
+end
+
+MODULEJARPATHS=[]
+
+if OPTS[:avro]
+  MODULEJARPATHS.push(repo_root + "/scalding-avro/target/scala-#{SHORT_SCALA_VERSION}/scalding-avro-assembly-#{SCALDING_VERSION}.jar")
+end
+
+if OPTS[:commons]
+  MODULEJARPATHS.push(repo_root + "/scalding-commons/target/scala-#{SHORT_SCALA_VERSION}/scalding-commons-assembly-#{SCALDING_VERSION}.jar")
+end
+
+if OPTS[:jdbc]
+  MODULEJARPATHS.push(repo_root + "/scalding-jdbc/target/scala-#{SHORT_SCALA_VERSION}/scalding-jdbc-assembly-#{SCALDING_VERSION}.jar")
+end
+
+if OPTS[:json]
+  MODULEJARPATHS.push(repo_root + "/scalding-json/target/scala-#{SHORT_SCALA_VERSION}/scalding-json-assembly-#{SCALDING_VERSION}.jar")
+end
+
+if OPTS[:parquet]
+  MODULEJARPATHS.push(repo_root + "/scalding-parquet/target/scala-#{SHORT_SCALA_VERSION}/scalding-parquet-assembly-#{SCALDING_VERSION}.jar")
+end
+
+if OPTS[:hdfs] && MODULEJARPATHS != []
+  puts("WARNING: Extra modules are not supported with --hdfs.  Create a fat jar.")
   exit(1)
 end
 
@@ -419,7 +449,7 @@ end
 def build_job_jar
   $stderr.puts("compiling " + JOBFILE)
   FileUtils.mkdir_p(BUILDDIR)
-  classpath = (([LIBCP, JARPATH, CONFIG["json-jar"], CONFIG["avro-jar"], CLASSPATH].select { |s| s != "" }) + convert_dependencies_to_jars).join(":")
+  classpath = (([LIBCP, JARPATH, MODULEJARPATHS, CLASSPATH].select { |s| s != "" }) + convert_dependencies_to_jars).join(":")
   puts("#{file_type}c -classpath #{classpath} -d #{BUILDDIR} #{JOBFILE}")
   unless system("#{COMPILE_CMD} -classpath #{classpath} -d #{BUILDDIR} #{JOBFILE}")
     puts "[SUGGESTION]: Try scald.rb --clean, you may have corrupt jars lying around"
@@ -460,7 +490,7 @@ if is_file?
 end
 
 def local_cmd(mode)
-  classpath = ([JARPATH, CONFIG["json-jar"], CONFIG["avro-jar"]] + convert_dependencies_to_jars).join(":") + (is_file? ? ":#{JOBJARPATH}" : "") +
+  classpath = ([JARPATH, MODULEJARPATHS].select { |s| s != "" } + convert_dependencies_to_jars).join(":") + (is_file? ? ":#{JOBJARPATH}" : "") +
                 ":" + CLASSPATH
   "java -Xmx#{LOCALMEM} -cp #{classpath} com.twitter.scalding.Tool #{JOB} #{mode} " + JOB_ARGS
 end
