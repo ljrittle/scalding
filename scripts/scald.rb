@@ -449,11 +449,8 @@ def build_job_jar
 end
 
 def hadoop_command
-  hadoop_classpath = (["/usr/share/java/hadoop-lzo-0.4.15.jar", JARBASE, MODULEJARPATHS.map{|n| File.basename(n)}, "job-jars/#{JOBJAR}"].select { |s| s != "" }).flatten.join(":")
   hadoop_libjars = ([MODULEJARPATHS.map{|n| File.basename(n)}, "job-jars/#{JOBJAR}"].select { |s| s != "" }).flatten.join(",")
-  "HADOOP_CLASSPATH=#{hadoop_classpath} " +
-    "hadoop jar #{JARBASE} -libjars #{hadoop_libjars} #{hadoop_opts} #{JOB} --hdfs " +
-    JOB_ARGS
+  "hadoop jar #{JARBASE} -libjars #{hadoop_libjars} #{hadoop_opts} #{JOB} --hdfs " + JOB_ARGS
 end
 
 def jar_mode_command
