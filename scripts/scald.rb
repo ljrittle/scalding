@@ -202,9 +202,7 @@ end
 
 JARFILE =
   if OPTS[:jar]
-    jarname = OPTS[:jar]
-    #highly Twitter specific here:
-    CONFIG["repo_root"] + "/dist/#{jarname}-deploy.jar"
+    OPTS[:jar]
   else
     CONFIG["jar"]
   end
