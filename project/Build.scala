@@ -6,18 +6,22 @@ import sbtassembly.Plugin._
 import AssemblyKeys._
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys._
+import scalariform.formatter.preferences._
+import com.typesafe.sbt.SbtScalariform._
 
 import scala.collection.JavaConverters._
 
 object ScaldingBuild extends Build {
   val printDependencyClasspath = taskKey[Unit]("Prints location of the dependencies")
 
-  val sharedSettings = Project.defaultSettings ++ assemblySettings ++ Seq(
+  val sharedSettings = Project.defaultSettings ++ assemblySettings ++ scalariformSettings ++ Seq(
     organization := "com.twitter",
 
     scalaVersion := "2.10.3",
 
     crossScalaVersions := Seq("2.9.3", "2.10.3"),
+
+    ScalariformKeys.preferences := formattingPreferences,
 
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
 
@@ -34,7 +38,8 @@ object ScaldingBuild extends Build {
       "releases" at "http://oss.sonatype.org/content/repositories/releases",
       "Concurrent Maven Repo" at "http://conjars.org/repo",
       "Clojars Repository" at "http://clojars.org/repo",
-      "Twitter Maven" at "http://maven.twttr.com"
+      "Twitter Maven" at "http://maven.twttr.com",
+      "Cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos/"
     ),
 
     printDependencyClasspath := {
@@ -143,8 +148,16 @@ object ScaldingBuild extends Build {
     scaldingRepl,
     scaldingJson,
     scaldingJdbc,
+    scaldingHadoopTest,
     maple
   )
+
+  lazy val formattingPreferences = {
+    import scalariform.formatter.preferences._
+    FormattingPreferences().
+      setPreference(AlignParameters, false).
+      setPreference(PreserveSpaceBeforeArguments, true)
+  }
 
   /**
    * This returns the youngest jar we released that is compatible with
@@ -177,7 +190,7 @@ object ScaldingBuild extends Build {
   lazy val cascadingJDBCVersion =
     System.getenv.asScala.getOrElse("SCALDING_CASCADING_JDBC_VERSION", "2.5.2")
 
-  val hadoopVersion = "1.1.2"
+  val hadoopVersion = "1.2.1"
   val algebirdVersion = "0.5.0"
   val bijectionVersion = "0.6.2"
   val chillVersion = "0.3.6"
@@ -299,7 +312,24 @@ object ScaldingBuild extends Build {
     previousArtifact := None,
     libraryDependencies <++= (scalaVersion) { scalaVersion => Seq(
       "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided",
-      "cascading" % "cascading-jdbc-core" % cascadingJDBCVersion
+      "cascading" % "cascading-jdbc-core" % cascadingJDBCVersion,
+      "cascading" % "cascading-jdbc-mysql" % cascadingJDBCVersion
+    )
+    }
+  ).dependsOn(scaldingCore)
+
+  lazy val scaldingHadoopTest = Project(
+    id = "scalding-hadoop-test",
+    base = file("scalding-hadoop-test"),
+    settings = sharedSettings
+  ).settings(
+    name := "scalding-hadoop-test",
+    previousArtifact := None,
+    libraryDependencies <++= (scalaVersion) { scalaVersion => Seq(
+      ("org.apache.hadoop" % "hadoop-core" % hadoopVersion),
+      ("org.apache.hadoop" % "hadoop-minicluster" % hadoopVersion),
+      "org.slf4j" % "slf4j-api" % slf4jVersion,
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion
     )
     }
   ).dependsOn(scaldingCore)

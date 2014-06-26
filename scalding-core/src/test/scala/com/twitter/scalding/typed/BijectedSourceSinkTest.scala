@@ -20,12 +20,12 @@ import org.specs._
 import com.twitter.scalding._
 
 private[typed] object LongIntPacker {
-   def lr(l: Int, r: Int) : Long = (l.toLong << 32) | r
-   def l(rowCol: Long) = (rowCol >>> 32).toInt
-   def r(rowCol: Long) = (rowCol & 0xFFFFFFFF).toInt
+  def lr(l: Int, r: Int): Long = (l.toLong << 32) | r
+  def l(rowCol: Long) = (rowCol >>> 32).toInt
+  def r(rowCol: Long) = (rowCol & 0xFFFFFFFF).toInt
 }
 
-class MutatedSourceJob(args : Args) extends Job(args) {
+class MutatedSourceJob(args: Args) extends Job(args) {
   import com.twitter.bijection._
   implicit val bij = new AbstractBijection[Long, (Int, Int)] {
     override def apply(x: Long) = (LongIntPacker.l(x), LongIntPacker.r(x))
@@ -35,9 +35,9 @@ class MutatedSourceJob(args : Args) extends Job(args) {
   val in0: TypedPipe[(Int, Int)] = TypedPipe.from(BijectedSourceSink(TypedTsv[Long]("input0")))
 
   in0.map { tup: (Int, Int) =>
-    (tup._1*2, tup._2*2)
+    (tup._1 * 2, tup._2 * 2)
   }
-  .write(BijectedSourceSink(TypedTsv[Long]("output")))
+    .write(BijectedSourceSink(TypedTsv[Long]("output")))
 }
 
 class MutatedSourceTest extends Specification {
@@ -45,6 +45,37 @@ class MutatedSourceTest extends Specification {
   "A MutatedSourceJob" should {
     "Not throw when using a converted source" in {
       JobTest(new MutatedSourceJob(_))
+        .source(TypedTsv[Long]("input0"), List(8L, 4123423431L, 12L))
+        .sink[Long](TypedTsv[Long]("output")) { outBuf =>
+          val unordered = outBuf.toSet
+          // Size should be unchanged
+          unordered.size must be_==(3)
+
+          // Simple case, 2*8L won't run into the packer logic
+          unordered(16L) must be_==(true)
+          // Big one that should be in both the high and low 4 bytes of the Long
+          val big = 4123423431L
+          val newBig = LongIntPacker.lr(LongIntPacker.l(big) * 2, LongIntPacker.r(big) * 2)
+          unordered(newBig) must be_==(true)
+        }
+        .run
+        .runHadoop
+        .finish
+    }
+  }
+}
+
+class ContraMappedAndThenSourceJob(args: Args) extends Job(args) {
+  TypedPipe.from(TypedTsv[Long]("input0").andThen { x => (LongIntPacker.l(x), LongIntPacker.r(x)) })
+    .map { case (l, r) => (l * 2, r * 2) }
+    .write(TypedTsv[Long]("output").contraMap { case (l, r) => LongIntPacker.lr(l, r) })
+}
+
+class ContraMappedAndThenSourceTest extends Specification {
+  import Dsl._
+  "A ContraMappedAndThenSourceJob" should {
+    "Not throw when using a converted source" in {
+      JobTest(new ContraMappedAndThenSourceJob(_))
         .source(TypedTsv[Long]("input0"), List(8L, 4123423431L, 12L))
         .sink[Long](TypedTsv[Long]("output")) { outBuf =>
           val unordered = outBuf.toSet
