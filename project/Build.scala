@@ -17,7 +17,7 @@ object ScaldingBuild extends Build {
   val sharedSettings = Project.defaultSettings ++ assemblySettings ++ scalariformSettings ++ Seq(
     organization := "com.twitter",
 
-    scalaVersion := "2.10.3",
+    scalaVersion := "2.10.4",
 
     crossScalaVersions := Seq("2.9.3", "2.10.4"),
 
