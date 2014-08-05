@@ -199,7 +199,7 @@ object ScaldingBuild extends Build {
   lazy val cascadingJDBCVersion =
     System.getenv.asScala.getOrElse("SCALDING_CASCADING_JDBC_VERSION", "2.5.3")
 
-  val hadoopVersion = "1.2.1"
+  val hadoopVersion = "2.3.0"
   val algebirdVersion = "0.7.0"
   val bijectionVersion = "0.6.3"
   val chillVersion = "0.4.0"
@@ -209,13 +209,15 @@ object ScaldingBuild extends Build {
     libraryDependencies ++= Seq(
       "cascading" % "cascading-core" % cascadingVersion,
       "cascading" % "cascading-local" % cascadingVersion,
-      "cascading" % "cascading-hadoop" % cascadingVersion,
+      "cascading" % "cascading-hadoop2-mr1" % cascadingVersion,
       "com.twitter" %% "chill" % chillVersion,
       "com.twitter" % "chill-hadoop" % chillVersion,
       "com.twitter" % "chill-java" % chillVersion,
       "com.twitter" %% "bijection-core" % bijectionVersion,
       "com.twitter" %% "algebird-core" % algebirdVersion,
-      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided",
+      "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided",
+      "org.apache.hadoop" % "hadoop-mapreduce-client-core" % hadoopVersion % "provided",
+      "org.apache.hadoop" % "hadoop-mapreduce-client-jobclient" % hadoopVersion % "provided",
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "provided"
     )
@@ -246,7 +248,8 @@ object ScaldingBuild extends Build {
       "cascading.avro" % "avro-scheme" % "2.1.2",
       "org.apache.avro" % "avro" % "1.7.4",
       "org.slf4j" % "slf4j-api" % slf4jVersion,
-      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided",
+      "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided",
+      "org.apache.hadoop" % "hadoop-mapreduce-client-core" % hadoopVersion % "provided",
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test",
       "org.scalacheck" %% "scalacheck" % "1.10.0" % "test",
       "org.scala-tools.testing" %% "specs" % "1.6.9" % "test"
@@ -257,7 +260,8 @@ object ScaldingBuild extends Build {
     libraryDependencies ++= Seq(
       "com.twitter" % "parquet-cascading" % "1.4.0",
       "org.slf4j" % "slf4j-api" % slf4jVersion,
-      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided",
+      "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided",
+      "org.apache.hadoop" % "hadoop-mapreduce-client-core" % hadoopVersion % "provided",
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test",
       "org.scalacheck" %% "scalacheck" % "1.10.0" % "test",
       "org.scala-tools.testing" %% "specs" % "1.6.9" % "test"
@@ -273,7 +277,9 @@ object ScaldingBuild extends Build {
     libraryDependencies <++= (scalaVersion) { scalaVersion => Seq(
       "org.scala-lang" % "jline" % scalaVersion,
       "org.scala-lang" % "scala-compiler" % scalaVersion,
-      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided",
+      "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided",
+      "org.apache.hadoop" % "hadoop-mapreduce-client-core" % hadoopVersion % "provided",
+      "org.apache.hadoop" % "hadoop-mapreduce-client-jobclient" % hadoopVersion % "provided",
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "provided"
     )
@@ -282,7 +288,8 @@ object ScaldingBuild extends Build {
 
   lazy val scaldingJson = module("json").settings(
     libraryDependencies <++= (scalaVersion) { scalaVersion => Seq(
-      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided",
+      "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided",
+      "org.apache.hadoop" % "hadoop-mapreduce-client-core" % hadoopVersion % "provided",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.4.1"
     )
     }
@@ -290,7 +297,8 @@ object ScaldingBuild extends Build {
 
   lazy val scaldingJdbc = module("jdbc").settings(
     libraryDependencies <++= (scalaVersion) { scalaVersion => Seq(
-      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided",
+      "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided",
+      "org.apache.hadoop" % "hadoop-mapreduce-client-core" % hadoopVersion % "provided",
       "cascading" % "cascading-jdbc-core" % cascadingJDBCVersion,
       "cascading" % "cascading-jdbc-mysql" % cascadingJDBCVersion
     )
@@ -299,8 +307,14 @@ object ScaldingBuild extends Build {
 
   lazy val scaldingHadoopTest = module("hadoop-test").settings(
     libraryDependencies <++= (scalaVersion) { scalaVersion => Seq(
-      ("org.apache.hadoop" % "hadoop-core" % hadoopVersion),
-      ("org.apache.hadoop" % "hadoop-minicluster" % hadoopVersion),
+      ("org.apache.hadoop" % "hadoop-common" % hadoopVersion classifier "" classifier "tests"),
+      ("org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion classifier "" classifier "tests"),
+      ("org.apache.hadoop" % "hadoop-yarn-server-tests" % hadoopVersion classifier "tests"),
+      ("org.apache.hadoop" % "hadoop-mapreduce-client-jobclient" % hadoopVersion classifier "" classifier "tests"),
+      ("org.apache.hadoop" % "hadoop-mapreduce-client-app" % hadoopVersion),
+      ("org.apache.hadoop" % "hadoop-yarn-api" % hadoopVersion),
+      ("org.apache.hadoop" % "hadoop-mapreduce-client-core" % hadoopVersion),
+      ("org.apache.hadoop" % "hadoop-mapreduce-client-hs" % hadoopVersion),
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion
     )
@@ -318,9 +332,10 @@ object ScaldingBuild extends Build {
     crossPaths := false,
     autoScalaLibrary := false,
     libraryDependencies <++= (scalaVersion) { scalaVersion => Seq(
-      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided",
+      "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided",
+      "org.apache.hadoop" % "hadoop-mapreduce-client-core" % hadoopVersion % "provided",
       "org.apache.hbase" % "hbase" % "0.94.5" % "provided",
-      "cascading" % "cascading-hadoop" % cascadingVersion
+      "cascading" % "cascading-hadoop2-mr1" % cascadingVersion
     )
     }
   )

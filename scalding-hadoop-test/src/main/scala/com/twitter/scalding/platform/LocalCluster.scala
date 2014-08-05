@@ -33,7 +33,7 @@ import java.io.{
 import java.nio.channels.FileLock
 
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.filecache.DistributedCache
+import org.apache.hadoop.mapreduce.filecache.DistributedCache
 import org.apache.hadoop.fs.{ FileSystem, FileUtil, Path }
 import org.apache.hadoop.hdfs.MiniDFSCluster
 import org.apache.hadoop.mapred.{ JobConf, MiniMRCluster }
