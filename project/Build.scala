@@ -275,7 +275,7 @@ object ScaldingBuild extends Build {
   lazy val scaldingJson = module("json").settings(
     libraryDependencies <++= (scalaVersion) { scalaVersion => Seq(
       "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided",
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.2.3"
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.4.1"
     )
     }
   ).dependsOn(scaldingCore)
