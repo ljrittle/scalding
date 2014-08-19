@@ -277,7 +277,8 @@ JARFILE =
   end
 
 JOBFILE= OPTS_PARSER.leftovers.first
-JOB_ARGS= JOBFILE.nil? ? [] : OPTS_PARSER.leftovers[1..-1].join(" ")
+JOB_ARGS= JOBFILE.nil? ? "" : OPTS_PARSER.leftovers[1..-1].join(" ")
+JOB_ARGS << " --repl " if OPTS[:repl]
 
 TOOL = OPTS[:tool] || 'com.twitter.scalding.Tool'
 
@@ -517,13 +518,17 @@ def build_job_jar
   FileUtils.rm_rf(BUILDDIR)
 end
 
+def hadoop_classpath
+  (["/usr/share/java/hadoop-lzo-0.4.15.jar", JARBASE, MODULEJARPATHS.map{|n| File.basename(n)}, "job-jars/#{JOBJAR}"].select { |s| s != "" }).flatten.join(":")
+end
+
 def hadoop_command
   hadoop_libjars = ([MODULEJARPATHS.map{|n| File.basename(n)}, "job-jars/#{JOBJAR}"].select { |s| s != "" }).flatten.join(",")
   "hadoop jar #{JARBASE} -libjars #{hadoop_libjars} #{hadoop_opts} #{JOB} --hdfs " + JOB_ARGS
 end
 
 def jar_mode_command
-  "hadoop jar #{JARBASE} #{hadoop_opts} #{JOB} --hdfs " + JOB_ARGS
+  "HADOOP_CLASSPATH=#{JARBASE} hadoop jar #{JARBASE} #{hadoop_opts} #{JOB} --hdfs " + JOB_ARGS
 end
 
 #Always sync the remote JARFILE

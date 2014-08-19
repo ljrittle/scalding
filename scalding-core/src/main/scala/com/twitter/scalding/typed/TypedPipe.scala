@@ -387,7 +387,7 @@ trait TypedPipe[+T] extends Serializable {
           .orElse(conf.get("cascading.tmp.dir"))
           .getOrElse("/tmp")
 
-        val tmpSeq = tmpDir + "/scalding-repl/snapshot-" + java.util.UUID.randomUUID + ".seq"
+        val tmpSeq = tmpDir + "/scalding/snapshot-" + java.util.UUID.randomUUID + ".seq"
         val dest = source.TypedSequenceFile[T](tmpSeq)
         write(dest)(flowDef, mode)
 
@@ -785,7 +785,7 @@ class TypedPipeInst[T] private[scalding] (@transient inpipe: Pipe,
       // for us. So unwind until you hit the first filter, snapshot,
       // then apply the unwound functions
       case Some((tap, fields, Converter(conv))) =>
-        Execution.from(m.openForRead(tap).asScala.map(tup => conv(tup.selectEntry(fields))))
+        Execution.from(m.openForRead(conf, tap).asScala.map(tup => conv(tup.selectEntry(fields))))
       case _ => forceToDiskExecution.flatMap(_.toIteratorExecution)
     }
   }
