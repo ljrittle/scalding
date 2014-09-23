@@ -5,6 +5,10 @@ resolvers ++= Seq(
   "sonatype-releases"  at "https://oss.sonatype.org/content/repositories/releases"
 )
 
+// Avoid requiring scala-compiler 2.10.2 per
+// http://blog.typesafe.com/what-happened-to-my-travis-ci
+libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value
+
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.6.2")
 
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.6")
