@@ -202,7 +202,7 @@ object ScaldingBuild extends Build {
     System.getenv.asScala.getOrElse("SCALDING_CASCADING_JDBC_VERSION", "2.5.4")
 
   val hadoopVersion = "1.2.1"
-  val algebirdVersion = "0.7.0"
+  val algebirdVersion = "0.7.1"
   val bijectionVersion = "0.6.3"
   val chillVersion = "0.4.0"
   val slf4jVersion = "1.6.6"
@@ -257,7 +257,7 @@ object ScaldingBuild extends Build {
 
   lazy val scaldingParquet = module("parquet").settings(
     libraryDependencies ++= Seq(
-      "com.twitter" % "parquet-cascading" % "1.4.0",
+      "com.twitter" % "parquet-cascading" % "1.6.0rc2",
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided",
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test",
